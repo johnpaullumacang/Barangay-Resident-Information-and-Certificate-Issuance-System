@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 24, 2025 at 04:49 AM
+-- Generation Time: Sep 26, 2025 at 08:55 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -65,8 +65,11 @@ CREATE TABLE `barangay_officials` (
 CREATE TABLE `certificate_issuance` (
   `issuance_no` varchar(15) NOT NULL,
   `certificate_id` varchar(15) DEFAULT NULL,
-  `date_issued` date DEFAULT NULL,
-  `signatory_note` text DEFAULT NULL
+  `resident_id` varchar(15) NOT NULL,
+  `file_path` varchar(255) NOT NULL,
+  `date_issued` datetime NOT NULL DEFAULT current_timestamp(),
+  `signatory_note` text DEFAULT NULL,
+  `status` enum('Issued','Pending') DEFAULT 'Pending'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -80,12 +83,23 @@ CREATE TABLE `certificate_request` (
   `barangay_id` varchar(15) DEFAULT NULL,
   `resident_id` varchar(15) DEFAULT NULL,
   `cert_type_id` varchar(15) DEFAULT NULL,
-  `request_date` date DEFAULT NULL,
+  `request_date` timestamp NULL DEFAULT NULL,
   `purpose` text DEFAULT NULL,
-  `status` varchar(50) DEFAULT NULL,
-  `release_date` date DEFAULT NULL,
-  `remarks` text DEFAULT NULL
+  `status` enum('Validated','Not Yet Validated') DEFAULT 'Not Yet Validated',
+  `release_date` timestamp NULL DEFAULT NULL,
+  `remarks` text DEFAULT NULL,
+  `requirements` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `certificate_request`
+--
+
+INSERT INTO `certificate_request` (`certificate_id`, `barangay_id`, `resident_id`, `cert_type_id`, `request_date`, `purpose`, `status`, `release_date`, `remarks`, `requirements`) VALUES
+('CERT20250925-95', NULL, 'RES68d48e6cad62', 'CERT004', '2025-09-24 16:00:00', 'XZ', '', '2025-09-25 16:00:00', NULL, ''),
+('CERT20250925-98', NULL, 'RES68d48e6cad62', 'CERT004', '2025-09-24 16:00:00', 'sdbjhsd', '', '2025-09-25 16:00:00', NULL, '../uploads/1758772342_Screenshot__2__-_Copy.png'),
+('CERT250925606', NULL, 'RES68d48e6cad62', 'CERT004', '2025-09-25 05:23:03', 'testeee', 'Validated', NULL, NULL, '1758777783_Screenshot__4_.png'),
+('CERT250926986', NULL, 'RES68d48e6cad62', 'CERT004', '2025-09-26 06:22:15', 'TEST 1', 'Validated', NULL, NULL, '1758867735_Screenshot__1_.png');
 
 -- --------------------------------------------------------
 
@@ -101,6 +115,19 @@ CREATE TABLE `certificate_type` (
   `certificate_template` varchar(255) DEFAULT NULL,
   `fee` decimal(10,2) DEFAULT 0.00
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `certificate_type`
+--
+
+INSERT INTO `certificate_type` (`cert_type_id`, `cert_name`, `description`, `requirements`, `certificate_template`, `fee`) VALUES
+('CERT001', 'Barangay Clearance', 'Issued by the Barangay for employment, ID, or other legal purposes.', 'Valid ID, Cedula', 'template_barangay_clearance.png', 100.00),
+('CERT002', 'Certificate of Residency', 'Proof that you are a bonafide resident.', 'Valid ID, Barangay Clearance', 'template_residency.png', 80.00),
+('CERT003', 'Certificate of Indigency', 'Proves financial hardship, often required for scholarships or medical assistance.', 'Barangay Clearance, Income Proof or Affidavit of Indigency', 'template_indigency.png', 50.00),
+('CERT004', 'Barangay Business Permit', 'Authorization for businesses to legally operate within the barangay.', 'Business Registration Documents, Barangay Clearance', 'template_business_permit.png', 300.00),
+('CERT005', 'Solo Parent Certificate', 'Special certification for solo parents to avail benefits under Solo Parent Act.', 'Valid ID, Birth Certificate of Child, Affidavit of Being Solo Parent', 'template_solo_parent.png', 0.00),
+('CERT006', 'Senior Citizen Certificate', 'Special certification for senior citizens to avail privileges and benefits.', 'Valid ID, Senior Citizen ID Application Form', 'template_senior_citizen.png', 0.00),
+('CERT007', 'TEAM PPR Certificate', 'Team PPR special document issued for participation and recognition.', 'Valid ID, Participation Proof from Team PPR', 'template_team_ppr.png', 0.00);
 
 -- --------------------------------------------------------
 
@@ -182,13 +209,22 @@ CREATE TABLE `notification` (
 --
 
 CREATE TABLE `payments` (
-  `payment_id` int(11) NOT NULL,
+  `payment_id` varchar(15) NOT NULL,
+  `certificate_id` varchar(15) NOT NULL,
   `resident_id` varchar(15) NOT NULL,
-  `payment_type` varchar(100) NOT NULL,
+  `payment_type` enum('Gcash','Cash','Other Online Option','Other') NOT NULL,
   `amount` decimal(10,2) NOT NULL,
-  `status` enum('paid','unpaid','pending') DEFAULT 'pending',
+  `status` enum('Validated','Not Yet Validated') DEFAULT 'Not Yet Validated',
   `created_at` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `payments`
+--
+
+INSERT INTO `payments` (`payment_id`, `certificate_id`, `resident_id`, `payment_type`, `amount`, `status`, `created_at`) VALUES
+('PAY007', 'CERT250925606', 'RES68d48e6cad62', '', 300.00, 'Validated', '2025-09-25 13:23:03'),
+('PAY008', 'CERT250926986', 'RES68d48e6cad62', '', 300.00, 'Validated', '2025-09-26 14:22:15');
 
 -- --------------------------------------------------------
 
@@ -274,7 +310,8 @@ INSERT INTO `resident` (`resident_id`, `user_id`, `first_name`, `mi`, `last_name
 ('RES68d0fef3432d', 'USR68d0fec2e531', 'Juryy gwapo', 'l.', 'gwapo oy', NULL, '2003-09-09', 'Male', NULL, '0999887836', 'single', NULL, NULL, 'hytryteds', 'tytws', 'ytytytuyuwws', 'iuiuws', '', NULL, '2025-09-22', NULL, '', 'RES68d0fef3432d_1758527219.jpg', '', NULL, NULL),
 ('RES68d29c4a2bab', 'USR68d29bf428c1', 'Diza', 'L.', 'Sumalpong', NULL, '2005-09-09', 'Female', NULL, '09567728733', 'single', NULL, NULL, 'waling-waling', 'Tupsan', 'mambajao', 'Camiguin', NULL, NULL, '2025-09-23', NULL, '', 'RES68d29c4a2bab_1758633034.jpg', '', NULL, NULL),
 ('RES68d356186ed2', 'USR68d355e9bd6d', 'erewrewrere', 'rewewe', 'fdf', NULL, '2005-09-09', 'Female', NULL, '0909887876', 'single', NULL, NULL, 'waling-waling2', 'Tupsan2', 'mambajao', 'Camiguin', NULL, NULL, '2025-09-24', NULL, 'Pending', 'RES68d356186ed2_1758680600.jpg', '', NULL, NULL),
-('RES68d3575988ce', 'USR68d355e9bd6d', 'erewrewrerew', 'rewewew', 'fdfw', NULL, '2005-09-09', 'Female', NULL, '09098878764', 'single', NULL, NULL, 'waling-waling22', 'Tupsan23', 'mambajao', 'Camiguin', NULL, NULL, '2025-09-24', NULL, 'Pending', 'RES68d3575988ce_1758680921.jpg', '', NULL, NULL);
+('RES68d3575988ce', 'USR68d355e9bd6d', 'erewrewrerew', 'rewewew', 'fdfw', NULL, '2005-09-09', 'Female', NULL, '09098878764', 'single', NULL, NULL, 'waling-waling22', 'Tupsan23', 'mambajao', 'Camiguin', NULL, NULL, '2025-09-24', NULL, 'Pending', 'RES68d3575988ce_1758680921.jpg', '', NULL, NULL),
+('RES68d48e6cad62', 'USR68d48e470364', 'Diza', 'C', 'Sumalpong', NULL, '2025-09-25', 'Female', NULL, '0945 547 8919', 'Single', NULL, NULL, 'rizal strt', 'Poblacion', 'mambajao', 'Select Province', NULL, NULL, '2025-09-25', NULL, 'Pending', 'RES68d48e6cad62_1758760556.png', 'n', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -303,7 +340,8 @@ INSERT INTO `users` (`user_id`, `username`, `email`, `password`, `role`, `full_n
 ('ADM0001', 'superadmin', 'superadmin@example.com', '$2y$10$XsNtmrc.k5Hm6yfKEmD4q.db4h.N0UTVVs2axytI3lZt7ETDlb8b.', 'superadmin', 'Super Admin', '2025-09-16 23:21:42', '', '0000-00-00 00:00:00', 'Approved'),
 ('USR68d0fec2e531', 'jury', 'jury1@gmail.com', '$2y$10$4TaDs7Z77JyPvmrHjNVRPuYByY4DGRIbqsqIUHZiMMA4lQv5eZIDa', 'health_worker', 'jury gwapo', '2025-09-22 15:46:10', '', '0000-00-00 00:00:00', 'Approved'),
 ('USR68d29bf428c1', 'dizang', 'dizasumalpong@gmail.com', '$2y$10$dstKcRk9jzi3JSkK62/Um.wlxv7s2NLyt1WKKIv/aHYWTKcj6Vn..', 'resident', 'Diza Sumalpong', '2025-09-23 21:09:08', '', '0000-00-00 00:00:00', 'Approved'),
-('USR68d355e9bd6d', 'jan', 'diza1222@gmail.com', '$2y$10$6ciNQD13iXxGRKz4wUTU.upvtqt1yA9cN7TpWHtttcozwewBx3DZ2', 'resident', 'dfgdgfdgfdghf', '2025-09-24 10:22:33', '', '0000-00-00 00:00:00', 'pending');
+('USR68d355e9bd6d', 'jan', 'diza1222@gmail.com', '$2y$10$6ciNQD13iXxGRKz4wUTU.upvtqt1yA9cN7TpWHtttcozwewBx3DZ2', 'resident', 'dfgdgfdgfdghf', '2025-09-24 10:22:33', '', '0000-00-00 00:00:00', 'pending'),
+('USR68d48e470364', 'diza123', 'diza123@gmail.com', '$2y$10$k62RIoR9iTWLrBg9hQ5BKOJwE4oYgzCB222vNBgDWq88JsWmPYl3q', 'resident', 'diza123', '2025-09-25 08:35:19', '', '0000-00-00 00:00:00', 'pending');
 
 --
 -- Indexes for dumped tables
@@ -328,7 +366,8 @@ ALTER TABLE `barangay_officials`
 --
 ALTER TABLE `certificate_issuance`
   ADD PRIMARY KEY (`issuance_no`),
-  ADD KEY `certificate_id` (`certificate_id`);
+  ADD KEY `certificate_id` (`certificate_id`),
+  ADD KEY `fk_resident` (`resident_id`);
 
 --
 -- Indexes for table `certificate_request`
@@ -375,7 +414,8 @@ ALTER TABLE `notification`
 --
 ALTER TABLE `payments`
   ADD PRIMARY KEY (`payment_id`),
-  ADD KEY `resident_id` (`resident_id`);
+  ADD KEY `resident_id` (`resident_id`),
+  ADD KEY `fk_payment_certificate` (`certificate_id`);
 
 --
 -- Indexes for table `prescribed_medicine`
@@ -429,12 +469,6 @@ ALTER TABLE `medical_history`
   MODIFY `med_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
--- AUTO_INCREMENT for table `payments`
---
-ALTER TABLE `payments`
-  MODIFY `payment_id` int(11) NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `prescribed_medicine`
 --
 ALTER TABLE `prescribed_medicine`
@@ -460,7 +494,9 @@ ALTER TABLE `barangay_officials`
 -- Constraints for table `certificate_issuance`
 --
 ALTER TABLE `certificate_issuance`
-  ADD CONSTRAINT `certificate_issuance_ibfk_1` FOREIGN KEY (`certificate_id`) REFERENCES `certificate_request` (`certificate_id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `certificate_issuance_ibfk_1` FOREIGN KEY (`certificate_id`) REFERENCES `certificate_request` (`certificate_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_cert_request` FOREIGN KEY (`certificate_id`) REFERENCES `certificate_request` (`certificate_id`),
+  ADD CONSTRAINT `fk_resident` FOREIGN KEY (`resident_id`) REFERENCES `resident` (`resident_id`);
 
 --
 -- Constraints for table `certificate_request`
@@ -485,6 +521,8 @@ ALTER TABLE `notification`
 -- Constraints for table `payments`
 --
 ALTER TABLE `payments`
+  ADD CONSTRAINT `fk_payment_certificate` FOREIGN KEY (`certificate_id`) REFERENCES `certificate_request` (`certificate_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_payment_resident` FOREIGN KEY (`resident_id`) REFERENCES `resident` (`resident_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `payments_ibfk_1` FOREIGN KEY (`resident_id`) REFERENCES `resident` (`resident_id`) ON DELETE CASCADE;
 
 --
